@@ -11,3 +11,7 @@ lazy val root = (project in file("."))
     libraryDependencies ++= scalaTest ++ jackson ++ Seq(typesafeConfig, commonsIo)
   )
 
+assemblyMergeStrategy in assembly := {
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case x => MergeStrategy.first
+}
