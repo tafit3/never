@@ -13,6 +13,7 @@ trait TaskListModel {
 }
 
 class TaskListModelImpl extends TaskListModel with StateAccessorSupport[TaskListAreaAccessor] {
+  private val TwoNewLines = """\n\s*\n""".r
   private var nodes: List[NodeView] = Nil
   private var timestampsVisible = false
 
@@ -51,7 +52,13 @@ class TaskListModelImpl extends TaskListModel with StateAccessorSupport[TaskList
   }
 
   private def flatPrefix(s: String, maxLen: Int): String = {
-    val flat = s.replaceAll("\\s+", " ").trim()
+    val twoNewLinesMatcher = TwoNewLines.pattern.matcher(s)
+    val processed = if(twoNewLinesMatcher.find()) {
+      s.substring(0, twoNewLinesMatcher.start())
+    } else {
+      s
+    }
+    val flat = processed.replaceAll("\\s+", " ").trim()
     if(flat.length > maxLen) {
       flat.substring(0, maxLen).trim()
     } else {

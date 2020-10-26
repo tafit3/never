@@ -19,14 +19,10 @@ object MainFrameModel {
   val AllViewTypes = List(AllFlatByTimeDesc, AllTreeByTimeDesc)
 }
 
-trait MainFrameModel {
-  def editSelectedNode(): Unit
-}
-
-class MainFrameModelImpl(taskListModel: TaskListModel,
-                         taskEditorModel: TaskEditorModel,
-                         readApi: RepositoryReadApi,
-                         writeApi: RepositoryWriteApi) extends MainFrameModel {
+class MainFrameModel(taskListModel: TaskListModel,
+                     taskEditorModel: TaskEditorModel,
+                     readApi: RepositoryReadApi,
+                     writeApi: RepositoryWriteApi) {
   import MainFrameModel._
   private var viewType: ViewType = AllTreeByTimeDesc
   private val expandedNodes = mutable.Set.empty[Long]
@@ -55,14 +51,6 @@ class MainFrameModelImpl(taskListModel: TaskListModel,
       case AllTreeByTimeDesc =>
         readApi.allNodesAsTreeByCreatedDesc(expandedNodes.toSet)
     }
-  }
-
-  def editNode(id: Long): Unit = {
-    taskEditorModel.editNode(id)
-  }
-
-  def editSelectedNode(): Unit = {
-    taskListModel.selectedNode.foreach(selected => taskEditorModel.editNode(selected.id))
   }
 
   def selectForMove(): Unit = {

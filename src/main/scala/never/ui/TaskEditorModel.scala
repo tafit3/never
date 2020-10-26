@@ -15,7 +15,7 @@ trait TaskEditorModel {
   def editNewNode(): Unit
   def setStateAccessor(stateAccessor: TaskEditorAreaAccessor): Unit
   def loseFocus(): Unit
-  def editNode(id: Long): Unit
+  def editNode(id: Long, focusEditor: Boolean): Unit
   def addListener(listener: TaskEditorListener): Unit
   def editingNodeId: Option[Long]
   def save(): Unit
@@ -58,13 +58,15 @@ class TaskEditorModelImpl(readApi: RepositoryReadApi, writeApi: RepositoryWriteA
     editingNode.map(_.id)
   }
 
-  def editNode(id: Long): Unit = {
+  def editNode(id: Long, focusEditor: Boolean): Unit = {
     if(editingNode.forall(_.id != id)) {
       readApi.nodeById(id).foreach { node =>
         save()
         setEditingNode(Some(node))
-        stateAccessor.requestFocus()
       }
+    }
+    if(focusEditor) {
+      stateAccessor.requestFocus()
     }
   }
 

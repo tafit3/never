@@ -32,21 +32,21 @@ class TaskListArea(model: TaskListModel) extends ListenerSupport[TaskListAreaLis
     }
   })
 
-  private def editSelectedNode(): Unit = {
-    model.selectedNode.foreach(selected => fire(_.editNode(selected.id)))
+  private def editSelectedNode(focusEditor: Boolean): Unit = {
+    model.selectedNode.foreach(selected => fire(_.editNode(selected.id, focusEditor)))
   }
 
   area.addKeyListener(new KeyAdapter {
     override def keyReleased(e: KeyEvent): Unit = {
       if(e.getKeyCode == KeyEvent.VK_TAB) {
-        editSelectedNode()
+        editSelectedNode(true)
       }
     }
   })
 
   area.getCaret.addChangeListener((_: ChangeEvent) => {
     if(!protector.editing) {
-      editSelectedNode()
+      editSelectedNode(false)
     }
   })
 

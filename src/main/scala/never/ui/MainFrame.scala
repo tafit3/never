@@ -18,7 +18,7 @@ class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi) extend
   private var actionId = 1
   private val taskListModel = new TaskListModelImpl
   private val taskEditorModel = new TaskEditorModelImpl(readApi, writeApi)
-  private val model = new MainFrameModelImpl(taskListModel, taskEditorModel, readApi, writeApi)
+  private val model = new MainFrameModel(taskListModel, taskEditorModel, readApi, writeApi)
 
   private val taskListArea = new TaskListArea(taskListModel)
   private val taskEditor = new TaskEditor(MainFrame.this, taskEditorModel)
@@ -32,8 +32,8 @@ class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi) extend
 
   private def startUi(): Unit = {
     taskListArea.addListener(new TaskListAreaListener() {
-      override def editNode(id: Long): Unit = {
-        taskEditorModel.editNode(id)
+      override def editNode(id: Long, focusEditor: Boolean): Unit = {
+        taskEditorModel.editNode(id, focusEditor)
       }
     })
     val panel = new JPanel

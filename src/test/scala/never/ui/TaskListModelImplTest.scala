@@ -185,5 +185,19 @@ class TaskListModelImplTest extends BaseTest {
       // then
       verify(accessor).requestFocus()
     }
+
+    "render description only up to first 2 newline characters" in {
+      // given
+      val nodes = List(someNodeView(content = "task1\n\nxyz"))
+
+      // when
+      impl.setNodes(nodes)
+
+      // then
+      verify(accessor).setText(
+        """--
+          |TODO task1
+        """.stripMarginTr, 0)
+    }
   }
 }

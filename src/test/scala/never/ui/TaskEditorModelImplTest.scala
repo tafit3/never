@@ -65,7 +65,7 @@ class TaskEditorModelImplTest extends BaseTest {
       // given
       val node = someNodeView()
       when(readApi.nodeById(node.id)).thenReturn(Some(node))
-      impl.editNode(node.id)
+      impl.editNode(node.id, focusEditor = false)
       reset(readApi, listener)
       val updatedNode = node.copy(content = "abc")
       when(readApi.nodeById(node.id)).thenReturn(Some(updatedNode))
@@ -85,7 +85,7 @@ class TaskEditorModelImplTest extends BaseTest {
       // given
       val node = someNodeView()
       when(readApi.nodeById(node.id)).thenReturn(Some(node))
-      impl.editNode(node.id)
+      impl.editNode(node.id, focusEditor = false)
       when(accessor.getText).thenReturn(node.content)
       reset(listener)
 
@@ -100,7 +100,7 @@ class TaskEditorModelImplTest extends BaseTest {
       // given
       val node = someNodeView()
       when(readApi.nodeById(node.id)).thenReturn(Some(node))
-      impl.editNode(node.id)
+      impl.editNode(node.id, focusEditor = false)
 
       // when
       val id = impl.editingNodeId
@@ -118,11 +118,11 @@ class TaskEditorModelImplTest extends BaseTest {
       // given
       val node = someNodeView()
       when(readApi.nodeById(node.id)).thenReturn(Some(node))
-      impl.editNode(node.id)
+      impl.editNode(node.id, focusEditor = false)
       reset(listener)
 
       // when
-      impl.editNode(node.id)
+      impl.editNode(node.id, focusEditor = false)
 
       // then
       verifyNoMoreInteractions(writeApi, listener)
@@ -133,7 +133,7 @@ class TaskEditorModelImplTest extends BaseTest {
       val node = someNodeView()
       val node2 = someNodeView()
       when(readApi.nodeById(node.id)).thenReturn(Some(node))
-      impl.editNode(node.id)
+      impl.editNode(node.id, focusEditor = false)
       reset(listener, readApi)
       val updatedNode = node.copy(content = "abc")
       when(readApi.nodeById(node.id)).thenReturn(Some(updatedNode))
@@ -141,7 +141,7 @@ class TaskEditorModelImplTest extends BaseTest {
       when(accessor.getText).thenReturn("abc")
 
       // when
-      impl.editNode(node2.id)
+      impl.editNode(node2.id, focusEditor = false)
 
       // then
       verify(writeApi).changeNodeContent(node.id, "abc")
