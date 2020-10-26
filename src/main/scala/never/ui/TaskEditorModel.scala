@@ -58,7 +58,7 @@ class TaskEditorModelImpl(readApi: RepositoryReadApi, writeApi: RepositoryWriteA
     editingNode.map(_.id)
   }
 
-  override def editNode(id: Long): Unit = {
+  def editNode(id: Long): Unit = {
     if(editingNode.forall(_.id != id)) {
       readApi.nodeById(id).foreach { node =>
         save()
@@ -74,7 +74,7 @@ class TaskEditorModelImpl(readApi: RepositoryReadApi, writeApi: RepositoryWriteA
     fire(_.editingNodeChanged(editingState, node))
   }
 
-  def clear(): Unit = {
+  def setEmptyEditingState(): Unit = {
     editingState = Empty
     setEditingNode(None)
   }
