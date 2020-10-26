@@ -51,6 +51,9 @@ class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
     }
   })
 
+  editArea.setLineWrap(true)
+  editArea.setWrapStyleWord(true)
+
   model.setStateAccessor(new TaskEditorAreaAccessor {
     def requestFocus(): Unit = editArea.requestFocus()
 
