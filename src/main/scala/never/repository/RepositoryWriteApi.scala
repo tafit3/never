@@ -2,7 +2,7 @@ package never.repository
 
 import java.time.Instant
 
-import never.domain.{AddNode, ChangeNodeContent, ChangeNodeStatus, DeleteNode, MoveNode, NodeEvent, NodeEventDetails, ParentInfo}
+import never.domain._
 
 trait RepositoryWriteApi {
   def addNode(status: String, content: String): Long

@@ -1,10 +1,7 @@
 package never.ui
 
-import java.time.Instant.now
-
 import never.domain.{NodeView, ParentInfo}
 import never.repository.{RepositoryReadApi, RepositoryWriteApi}
-import never.ui.MainFrameModel.{AllFlatByTimeDesc, AllTreeByTimeDesc, ViewType}
 
 import scala.collection.mutable
 

@@ -51,9 +51,7 @@ class TaskListArea(model: TaskListModel) extends ListenerSupport[TaskListAreaLis
   })
 
   model.setStateAccessor(new TaskListAreaAccessor {
-    override def getLineOfOffset(position: Int): Int = area.getLineOfOffset(position)
-
-    override def getCaretPosition: Int = area.getCaretPosition
+    override def getLineOfCaretPosition: Int = area.getLineOfOffset(area.getCaretPosition)
 
     override def getText: String = area.getText
 

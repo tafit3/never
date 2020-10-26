@@ -1,9 +1,9 @@
 package never.repository
 
-import never.util.CollectionUtils._
 import java.time.Instant
 
-import never.domain.{AddNode, ChangeNodeContent, ChangeNodeStatus, MoveNode, NodeEvent, NodeView, ParentInfo, DeleteNode}
+import never.domain._
+import never.util.CollectionUtils._
 
 import scala.annotation.tailrec
 import scala.collection.mutable

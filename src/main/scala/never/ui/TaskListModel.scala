@@ -30,7 +30,7 @@ class TaskListModelImpl extends TaskListModel with StateAccessorSupport[TaskList
   }
 
   def selectedNode: Option[NodeView] = {
-    val line = stateAccessor.getLineOfOffset(stateAccessor.getCaretPosition)
+    val line = stateAccessor.getLineOfCaretPosition
     Option.when(line >= 1 && line <= nodes.size)(nodes(line-1))
   }
 
@@ -41,7 +41,8 @@ class TaskListModelImpl extends TaskListModel with StateAccessorSupport[TaskList
 
   private def viewThem(selectedIndex: Int): Unit = {
     require(selectedIndex >= 0 && selectedIndex <= nodes.length, s"selectedIndex='$selectedIndex' out of bound. nodes.length='${nodes.length}'")
-    stateAccessor.setText(EMPTY_VALUE_PLACEHOLDER+"\n"+nodes.map(nodeToLine).mkString("\n"), selectedIndex)
+    val nodesSerialized = nodes.map(nodeToLine).mkString("\n")
+    stateAccessor.setText(EMPTY_VALUE_PLACEHOLDER+(if(nodes.nonEmpty) "\n"+nodesSerialized else ""), selectedIndex)
   }
 
   private def nodeToLine(node: NodeView): String = {
@@ -52,7 +53,7 @@ class TaskListModelImpl extends TaskListModel with StateAccessorSupport[TaskList
   private def flatPrefix(s: String, maxLen: Int): String = {
     val flat = s.replaceAll("\\s+", " ").trim()
     if(flat.length > maxLen) {
-      flat.substring(0, maxLen)
+      flat.substring(0, maxLen).trim()
     } else {
       flat
     }

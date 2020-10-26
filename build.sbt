@@ -8,7 +8,7 @@ ThisBuild / organizationName := "tafit3"
 lazy val root = (project in file("."))
   .settings(
     name := "never",
-    libraryDependencies ++= scalaTest ++ jackson ++ Seq(typesafeConfig, commonsIo)
+    libraryDependencies ++= scalaTest ++ jackson ++ Seq(typesafeConfig, commonsIo) ++ mockitoScala
   )
 
 assemblyMergeStrategy in assembly := {
