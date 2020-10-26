@@ -1,11 +1,13 @@
 package never.ui
 
-import java.awt._
+import java.awt.{Toolkit, _}
 import java.awt.event.{ActionEvent, InputEvent, KeyAdapter, KeyEvent}
 import java.time.Instant
 import java.time.Instant.now
 
-import javax.swing._
+import javax.swing.{AbstractAction, KeyStroke, _}
+import javax.swing.event.{UndoableEditEvent, UndoableEditListener}
+import javax.swing.undo.{CannotRedoException, CannotUndoException, UndoManager}
 import never.domain.NodeView
 import never.ui.MainFrame.LabelMargin
 import never.ui.TaskEditor.EditViewData
@@ -18,6 +20,7 @@ object TaskEditor {
 }
 
 class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
+  private val MASK = Toolkit.getDefaultToolkit.getMenuShortcutKeyMask
   private val helpButton = new JButton("?")
   private val upperLabel = new JLabel
   private val editArea = ComponentFactory.createTextArea()
@@ -53,6 +56,35 @@ class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
 
   editArea.setLineWrap(true)
   editArea.setWrapStyleWord(true)
+
+  val undoManager = new UndoManager
+
+  editArea.getDocument.addUndoableEditListener(new UndoableEditListener {
+    override def undoableEditHappened(e: UndoableEditEvent): Unit = {
+      undoManager.addEdit(e.getEdit)
+    }
+  })
+
+  editArea.getActionMap.put("Undo", new AbstractAction("Undo") {
+    override def actionPerformed(evt: ActionEvent): Unit = {
+      try if (undoManager.canUndo) undoManager.undo
+      catch {
+        case e: CannotUndoException =>
+          e.printStackTrace()
+      }
+    }
+  })
+  editArea.getInputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_Z, MASK), "Undo")
+  editArea.getActionMap.put("Redo", new AbstractAction("Redo") {
+    override def actionPerformed(evt: ActionEvent): Unit = {
+      try if (undoManager.canRedo) undoManager.redo
+      catch {
+        case e: CannotRedoException =>
+          e.printStackTrace()
+      }
+    }
+  })
+  editArea.getInputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_Y, MASK), "Redo")
 
   model.setStateAccessor(new TaskEditorAreaAccessor {
     def requestFocus(): Unit = editArea.requestFocus()
@@ -105,6 +137,7 @@ class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
       case Some(EditViewData(instant, text, status)) =>
         upperLabel.setText(DateUtils.format(instant) + "  "+status)
         editArea.setText(text)
+        undoManager.discardAllEdits()
         editArea.setEnabled(true)
         editArea.setBackground(Color.WHITE)
       case None =>
