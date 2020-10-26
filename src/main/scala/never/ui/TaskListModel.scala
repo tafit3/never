@@ -10,6 +10,7 @@ trait TaskListModel {
   def selectedNode: Option[NodeView]
   def requestFocus(): Unit
   def flipTimestampVisibility(): Unit
+  def isFocused(): Boolean
 }
 
 class TaskListModelImpl extends TaskListModel with StateAccessorSupport[TaskListAreaAccessor] {
@@ -69,4 +70,9 @@ class TaskListModelImpl extends TaskListModel with StateAccessorSupport[TaskList
   def requestFocus(): Unit = {
     stateAccessor.requestFocus()
   }
+
+  override def isFocused(): Boolean = {
+    stateAccessor.isFocused()
+  }
+
 }

@@ -27,6 +27,20 @@ class MainFrameModel(taskListModel: TaskListModel,
   private var viewType: ViewType = AllTreeByTimeDesc
   private val expandedNodes = mutable.Set.empty[Long]
   private var selectedForMove: Option[Long] = None
+  private var filter: Option[String] = None
+
+  def applyFilter(filter: String): Unit = {
+    val processed = if(filter.isBlank) {
+      None
+    } else {
+      Some(filter.trim)
+    }
+    if(this.filter != processed) {
+      this.filter = processed
+      refreshTaskList()
+    }
+  }
+
 
   def refreshTaskList(): Unit = {
     taskListModel.setNodes(readNodes())
@@ -47,9 +61,9 @@ class MainFrameModel(taskListModel: TaskListModel,
   private def readNodes(): List[NodeView] = {
     viewType match {
       case AllFlatByTimeDesc =>
-        readApi.allNodesByCreatedDesc
+        readApi.allNodesByCreatedDesc(filter)
       case AllTreeByTimeDesc =>
-        readApi.allNodesAsTreeByCreatedDesc(expandedNodes.toSet)
+        readApi.allNodesAsTreeByCreatedDesc(filter, expandedNodes.toSet)
     }
   }
 
@@ -104,13 +118,15 @@ class MainFrameModel(taskListModel: TaskListModel,
   }
 
   def flipExpandCurrentNode(): Unit = {
-    taskListModel.selectedNode.foreach { selectedNode =>
-      if(expandedNodes.contains(selectedNode.id)) {
-        expandedNodes.remove(selectedNode.id)
-      } else {
-        expandedNodes += selectedNode.id
+    if(taskListModel.isFocused()) {
+      taskListModel.selectedNode.foreach { selectedNode =>
+        if (expandedNodes.contains(selectedNode.id)) {
+          expandedNodes.remove(selectedNode.id)
+        } else {
+          expandedNodes += selectedNode.id
+        }
+        refreshTaskList()
       }
-      refreshTaskList()
     }
   }
 

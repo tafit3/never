@@ -25,7 +25,7 @@ class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi) extend
 
   def mainPanel(): JPanel = {
     val panel = new JPanel(new GridLayout(1, 2))
-    panel.add(new JScrollPane(taskListArea.getArea))
+    panel.add(taskListArea.createPanel())
     panel.add(taskEditor.initializePanel())
     panel
   }
@@ -34,6 +34,10 @@ class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi) extend
     taskListArea.addListener(new TaskListAreaListener() {
       override def editNode(id: Long, focusEditor: Boolean): Unit = {
         taskEditorModel.editNode(id, focusEditor)
+      }
+
+      override def applyFilter(filter: String): Unit = {
+        model.applyFilter(filter)
       }
     })
     val panel = new JPanel

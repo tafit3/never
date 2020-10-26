@@ -1,6 +1,7 @@
 package never.repository
 
 import java.time.Instant
+import java.util.regex.Pattern
 
 import never.domain._
 import never.util.CollectionUtils._
@@ -25,13 +26,21 @@ class MemoryRepositoryModel extends RepositoryModel {
     nodes.get(id).map(toNodeView(_))
   }
 
-  override def allNodesByCreatedDesc: List[NodeView] = {
-    nodes.values.toList.sortBy(_.created).reverse.map(toNodeView(_))
+  override def allNodesByCreatedDesc(filter: Option[String]): List[NodeView] = {
+    (filter match {
+      case None => nodes.values
+      case Some(f) => withFilter(f) { matcher =>
+        nodes.values.filter(node => matcher(node.content))
+      }
+    }).toList.sortBy(_.created).reverse.map(toNodeView(_))
   }
 
-  override def allNodesAsTreeByCreatedDesc(expandedNodes: Set[Long]): List[NodeView] = {
+  override def allNodesAsTreeByCreatedDesc(filter: Option[String], expandedNodes: Set[Long]): List[NodeView] = {
     nodes.values.filter(_.parent.isEmpty).toList.sortBy(_.created).reverse.flatMap { rootNode =>
-      toNodeViewWithChildren(rootNode, expandedNodes)
+      filter match {
+        case None => toNodeViewWithChildren(rootNode, expandedNodes)
+        case Some(f) => toFilteredNodeViewWithChildren(f, rootNode)
+      }
     }
   }
 
@@ -48,8 +57,31 @@ class MemoryRepositoryModel extends RepositoryModel {
     visitDescendants(node, 0, None)
   }
 
-  private def toNodeView(node: Node, depth: Int = 0, parentId: Option[Long] = None, expandable: Boolean = false): NodeView = {
-    NodeView(node.id, node.created, node.status, node.content, depth, parentId, expandable)
+  private def toFilteredNodeViewWithChildren(filter: String, node: Node): List[NodeView] = {
+    withFilter(filter) { matcher =>
+      def visitDescendants(cur: Node, depth: Int, parentId: Option[Long]): List[NodeView] = {
+        val thisNode = toNodeView(cur, depth, parentId, matching = matcher(cur.content))
+        val childrenNodes = children.get(cur.id).map(_.ids.flatMap { childId =>
+          visitDescendants(nodes(childId), depth + 1, Some(cur.id))
+        }).toList.flatten
+        if (thisNode.matching || childrenNodes.nonEmpty) {
+          thisNode +: childrenNodes
+        } else {
+          List.empty
+        }
+      }
+
+      visitDescendants(node, 0, None)
+    }
+  }
+
+  private def withFilter[T](filter: String)(f: (String => Boolean) => T): T = {
+    val pattern = Pattern.compile(filter, Pattern.CASE_INSENSITIVE)
+    f(s => pattern.matcher(s).find())
+  }
+
+  private def toNodeView(node: Node, depth: Int = 0, parentId: Option[Long] = None, expandable: Boolean = false, matching: Boolean = false): NodeView = {
+    NodeView(node.id, node.created, node.status, node.content, depth, parentId, expandable, matching)
   }
 
   override def processEvents(events: List[NodeEvent]): Unit = {

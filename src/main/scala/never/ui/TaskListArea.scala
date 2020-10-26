@@ -1,16 +1,36 @@
 package never.ui
 
+import java.awt.BorderLayout
 import java.awt.event.{KeyAdapter, KeyEvent}
 
-import javax.swing.JTextArea
+import javax.swing.{BorderFactory, JPanel, JScrollPane, JTextArea, JTextField}
 import javax.swing.event.ChangeEvent
 import javax.swing.text.{AbstractDocument, AttributeSet, DocumentFilter}
+import never.ui.MainFrame.MarginSize
 
 class TaskListArea(model: TaskListModel) extends ListenerSupport[TaskListAreaListener] {
+  private val filter: JTextField = ComponentFactory.createTextField()
   private val area: JTextArea = ComponentFactory.createTextArea()
   private val protector = new TextAreaProtector
 
   def getArea: JTextArea = area
+
+  def createPanel(): JPanel = {
+    val panel = new JPanel()
+    panel.setLayout(new BorderLayout)
+    panel.setBorder(BorderFactory.createEmptyBorder(MarginSize, MarginSize, MarginSize, MarginSize))
+    panel.add(filter, BorderLayout.NORTH)
+    panel.add(new JScrollPane(area))
+    panel
+  }
+
+  filter.addKeyListener(new KeyAdapter {
+    override def keyReleased(e: KeyEvent): Unit = {
+      if(e.getKeyCode == KeyEvent.VK_ENTER) {
+        fire(_.applyFilter(filter.getText()))
+      }
+    }
+  })
 
   area.getDocument.asInstanceOf[AbstractDocument].setDocumentFilter(new DocumentFilter {
     override def insertString(fb: DocumentFilter.FilterBypass, offset: Int, string: String, attr: AttributeSet): Unit = {
@@ -64,6 +84,10 @@ class TaskListArea(model: TaskListModel) extends ListenerSupport[TaskListAreaLis
 
     override def requestFocus(): Unit = {
       area.requestFocus()
+    }
+
+    override def isFocused(): Boolean = {
+      area.isFocusOwner
     }
   })
 

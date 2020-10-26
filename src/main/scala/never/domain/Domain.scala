@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 
 // views
 
-case class NodeView(id: Long, created: Instant, status: String, content: String, depth: Int, parent: Option[Long], expandable: Boolean) {
+case class NodeView(id: Long, created: Instant, status: String, content: String, depth: Int, parent: Option[Long], expandable: Boolean, matching: Boolean) {
   require(id > 0, "id must be greater than 0")
 }
 

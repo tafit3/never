@@ -25,7 +25,7 @@ trait TestDomain {
                    depth: Int = 0,
                    parentInfo: Option[Long] = None,
                    expandable: Boolean = false): NodeView = {
-    NodeView(testId, created, status, content, depth, parentInfo, expandable)
+    NodeView(testId, created, status, content, depth, parentInfo, expandable, false)
   }
 
 }
