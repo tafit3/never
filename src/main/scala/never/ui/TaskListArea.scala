@@ -3,10 +3,10 @@ package never.ui
 import java.awt.BorderLayout
 import java.awt.event.{KeyAdapter, KeyEvent}
 
-import javax.swing.{BorderFactory, JPanel, JScrollPane, JTextArea, JTextField}
 import javax.swing.event.ChangeEvent
 import javax.swing.text.{AbstractDocument, AttributeSet, DocumentFilter}
-import never.ui.MainFrame.MarginSize
+import javax.swing.{JPanel, JScrollPane, JTextArea, JTextField}
+import never.util.Constants.DefaultEmptyBorder
 
 class TaskListArea(model: TaskListModel) extends ListenerSupport[TaskListAreaListener] {
   private val filter: JTextField = ComponentFactory.createTextField()
@@ -18,7 +18,7 @@ class TaskListArea(model: TaskListModel) extends ListenerSupport[TaskListAreaLis
   def createPanel(): JPanel = {
     val panel = new JPanel()
     panel.setLayout(new BorderLayout)
-    panel.setBorder(BorderFactory.createEmptyBorder(MarginSize, MarginSize, MarginSize, MarginSize))
+    panel.setBorder(DefaultEmptyBorder)
     panel.add(filter, BorderLayout.NORTH)
     panel.add(new JScrollPane(area))
     panel
@@ -27,7 +27,10 @@ class TaskListArea(model: TaskListModel) extends ListenerSupport[TaskListAreaLis
   filter.addKeyListener(new KeyAdapter {
     override def keyReleased(e: KeyEvent): Unit = {
       if(e.getKeyCode == KeyEvent.VK_ENTER) {
-        fire(_.applyFilter(filter.getText()))
+        doFilter()
+      } else if(e.getKeyCode == KeyEvent.VK_ESCAPE) {
+        filter.setText("")
+        doFilter()
       }
     }
   })
@@ -51,6 +54,10 @@ class TaskListArea(model: TaskListModel) extends ListenerSupport[TaskListAreaLis
       }
     }
   })
+
+  private def doFilter(): Unit = {
+    fire(_.applyFilter(filter.getText()))
+  }
 
   private def editSelectedNode(focusEditor: Boolean): Unit = {
     model.selectedNode.foreach(selected => fire(_.editNode(selected.id, focusEditor)))

@@ -10,6 +10,7 @@ trait RepositoryWriteApi {
   def changeNodeStatus(id: Long, status: String): Unit
   def moveNode(id: Long, parentInfo: Option[ParentInfo]): Unit
   def deleteNode(id: Long): Unit
+  def setTags(id: Long, tags: Set[String]): Unit
 }
 
 class SimpleRepositoryWriteApi(idGen: SequenceIdGenerator, consumers: List[EventsConsumer]) extends RepositoryWriteApi {
@@ -34,6 +35,10 @@ class SimpleRepositoryWriteApi(idGen: SequenceIdGenerator, consumers: List[Event
 
   override def deleteNode(id: Long): Unit = {
     applyEvents(List(DeleteNode(id)))
+  }
+
+  override def setTags(id: Long, tags: Set[String]): Unit = {
+    applyEvents(List(SetTags(id, tags)))
   }
 
   private def applyEvents(eventsDetails: List[NodeEventDetails]): Unit = {

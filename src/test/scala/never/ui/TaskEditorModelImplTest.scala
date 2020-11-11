@@ -12,9 +12,12 @@ class TaskEditorModelImplTest extends BaseTest {
   val impl = new TaskEditorModelImpl(readApi, writeApi)
 
   val accessor = mock[TaskEditorAreaAccessor]
+  when(accessor.content).thenReturn("")
+  when(accessor.tags).thenReturn(Set.empty)
   val listener = mock[TaskEditorListener]
   impl.setStateAccessor(accessor)
   impl.addListener(listener)
+  val SomeTags = Set("tag1", "tag2")
 
   "model" should {
     "do nothing on save when in empty editing state" in {
@@ -32,7 +35,7 @@ class TaskEditorModelImplTest extends BaseTest {
     "do nothing if the new node is empty or blank" in Inspectors.forAll(Seq("", "  ")) { text =>
       // given
       impl.editNewNode()
-      when(accessor.getText).thenReturn(text)
+      when(accessor.content).thenReturn(text)
       reset(listener)
 
       // when
@@ -45,7 +48,7 @@ class TaskEditorModelImplTest extends BaseTest {
     "add node if the new node is not empty" in {
       // given
       impl.editNewNode()
-      when(accessor.getText).thenReturn("abc")
+      when(accessor.content).thenReturn("abc")
       val node = someNodeView()
       val updatedNode = node.copy(content = "abc")
       when(readApi.nodeById(*)).thenReturn(Some(updatedNode))
@@ -61,6 +64,27 @@ class TaskEditorModelImplTest extends BaseTest {
       verifyNoMoreInteractions(writeApi, listener)
     }
 
+    "add node if the new node is not empty and set tags" in {
+      // given
+      impl.editNewNode()
+      when(accessor.content).thenReturn("abc")
+      when(accessor.tags).thenReturn(SomeTags)
+      val node = someNodeView()
+      val updatedNode = node.copy(content = "abc", tags = SomeTags)
+      when(readApi.nodeById(*)).thenReturn(Some(updatedNode))
+      reset(listener)
+
+      // when
+      impl.save()
+
+      // then
+      verify(writeApi).addNode("TODO", "abc")
+      verify(writeApi).setTags(*, eqTo(SomeTags))
+      verify(listener).nodeSaved(*)
+      verify(listener).editingNodeChanged(EditingExistingNode, Some(updatedNode))
+      verifyNoMoreInteractions(writeApi, listener)
+    }
+
     "save changes for existing node" in {
       // given
       val node = someNodeView()
@@ -69,7 +93,7 @@ class TaskEditorModelImplTest extends BaseTest {
       reset(readApi, listener)
       val updatedNode = node.copy(content = "abc")
       when(readApi.nodeById(node.id)).thenReturn(Some(updatedNode))
-      when(accessor.getText).thenReturn("abc")
+      when(accessor.content).thenReturn("abc")
 
       // when
       impl.save()
@@ -81,12 +105,50 @@ class TaskEditorModelImplTest extends BaseTest {
       verifyNoMoreInteractions(writeApi, listener)
     }
 
+    "save changes in tags for existing node" in {
+      // given
+      val node = someNodeView()
+      when(readApi.nodeById(node.id)).thenReturn(Some(node))
+      impl.editNode(node.id, focusEditor = false)
+      reset(readApi, listener)
+      val updatedNode = node.copy(tags = SomeTags)
+      when(readApi.nodeById(node.id)).thenReturn(Some(updatedNode))
+      when(accessor.content).thenReturn(node.content)
+      when(accessor.tags).thenReturn(SomeTags)
+
+      // when
+      impl.save()
+
+      // then
+      verify(writeApi, never).changeNodeContent(*, *)
+      verify(writeApi).setTags(node.id, SomeTags)
+      verify(listener).nodeSaved(*)
+      verify(listener).editingNodeChanged(EditingExistingNode, Some(updatedNode))
+      verifyNoMoreInteractions(writeApi, listener)
+    }
+
     "do nothing on save if content didn't change for existing node" in {
       // given
       val node = someNodeView()
       when(readApi.nodeById(node.id)).thenReturn(Some(node))
       impl.editNode(node.id, focusEditor = false)
-      when(accessor.getText).thenReturn(node.content)
+      when(accessor.content).thenReturn(node.content)
+      reset(listener)
+
+      // when
+      impl.save()
+
+      // then
+      verifyNoMoreInteractions(writeApi, listener)
+    }
+
+    "do nothing on save if tags didn't change for existing node" in {
+      // given
+      val node = someNodeView(tags = SomeTags)
+      when(readApi.nodeById(node.id)).thenReturn(Some(node))
+      impl.editNode(node.id, focusEditor = false)
+      when(accessor.content).thenReturn(node.content)
+      when(accessor.tags).thenReturn(SomeTags)
       reset(listener)
 
       // when
@@ -135,16 +197,18 @@ class TaskEditorModelImplTest extends BaseTest {
       when(readApi.nodeById(node.id)).thenReturn(Some(node))
       impl.editNode(node.id, focusEditor = false)
       reset(listener, readApi)
-      val updatedNode = node.copy(content = "abc")
+      val updatedNode = node.copy(content = "abc", tags = SomeTags)
       when(readApi.nodeById(node.id)).thenReturn(Some(updatedNode))
       when(readApi.nodeById(node2.id)).thenReturn(Some(node2))
-      when(accessor.getText).thenReturn("abc")
+      when(accessor.content).thenReturn("abc")
+      when(accessor.tags).thenReturn(SomeTags)
 
       // when
       impl.editNode(node2.id, focusEditor = false)
 
       // then
       verify(writeApi).changeNodeContent(node.id, "abc")
+      verify(writeApi).setTags(node.id, SomeTags)
       verify(listener).nodeSaved(node.id)
       verify(listener).editingNodeChanged(EditingExistingNode, Some(updatedNode))
       verify(listener).editingNodeChanged(EditingExistingNode, Some(node2))

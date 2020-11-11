@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 
 // views
 
-case class NodeView(id: Long, created: Instant, status: String, content: String, depth: Int, parent: Option[Long], expandable: Boolean, matching: Boolean) {
+case class NodeView(id: Long, created: Instant, status: String, content: String, tags: Set[String], depth: Int, parent: Option[Long], expandable: Boolean, matching: Boolean) {
   require(id > 0, "id must be greater than 0")
 }
 
@@ -31,7 +31,8 @@ case class NodeEvent(created: Instant, details: NodeEventDetails)
   new Type(value = classOf[ChangeNodeStatus]),
   new Type(value = classOf[ChangeNodeContent]),
   new Type(value = classOf[DeleteNode]),
-  new Type(value = classOf[MoveNode])
+  new Type(value = classOf[MoveNode]),
+  new Type(value = classOf[SetTags])
 ))
 sealed trait NodeEventDetails
 case class AddNode(id: Long, status: String, content: String) extends NodeEventDetails
@@ -39,3 +40,4 @@ case class ChangeNodeStatus(id: Long, status: String) extends NodeEventDetails
 case class ChangeNodeContent(id: Long, content: String) extends NodeEventDetails
 case class DeleteNode(id: Long) extends NodeEventDetails
 case class MoveNode(id: Long, parentInfo: Option[ParentInfo]) extends NodeEventDetails
+case class SetTags(id: Long, tags: Set[String]) extends NodeEventDetails

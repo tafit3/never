@@ -22,10 +22,11 @@ trait TestDomain {
   def someNodeView(created: Instant = Instant.now(),
                    status: String = "TODO",
                    content: String = randomStr,
+                   tags: Set[String] = Set.empty,
                    depth: Int = 0,
                    parentInfo: Option[Long] = None,
                    expandable: Boolean = false): NodeView = {
-    NodeView(testId, created, status, content, depth, parentInfo, expandable, false)
+    NodeView(testId, created, status, content, tags, depth, parentInfo, expandable, false)
   }
 
 }

@@ -30,12 +30,12 @@ class TaskEditorModelImpl(readApi: RepositoryReadApi, writeApi: RepositoryWriteA
     editingState match {
       case Empty =>
       case AddingNewNode =>
-        if(!stateAccessor.getText.isBlank) {
+        if(!stateAccessor.content.isBlank) {
           finishEdit()
         }
       case EditingExistingNode =>
         require(editingNode.isDefined)
-        if(editingNode.exists(_.content != stateAccessor.getText)) {
+        if(editingNode.exists(node => (node.content != stateAccessor.content) || (node.tags != stateAccessor.tags))) {
           finishEdit()
         }
     }
@@ -44,10 +44,19 @@ class TaskEditorModelImpl(readApi: RepositoryReadApi, writeApi: RepositoryWriteA
   private def finishEdit(): Unit = {
     val id = editingNode match {
       case Some(node) =>
-        writeApi.changeNodeContent(node.id, stateAccessor.getText)
+        if(node.content != stateAccessor.content) {
+          writeApi.changeNodeContent(node.id, stateAccessor.content)
+        }
+        if(node.tags != stateAccessor.tags) {
+          writeApi.setTags(node.id, stateAccessor.tags)
+        }
         node.id
       case None =>
-        writeApi.addNode("TODO", stateAccessor.getText)
+        val nodeId = writeApi.addNode("TODO", stateAccessor.content)
+        if(stateAccessor.tags.nonEmpty) {
+          writeApi.setTags(nodeId, stateAccessor.tags)
+        }
+        nodeId
     }
     editingState = Empty
     setEditingNode(readApi.nodeById(id))

@@ -17,4 +17,5 @@ object Dependencies {
     "com.fasterxml.jackson.datatype" %"jackson-datatype-jsr310" % jacksonVersion)
   lazy val typesafeConfig = "com.typesafe" % "config" % "1.4.0"
   lazy val commonsIo = "commons-io" % "commons-io" % "2.8.0"
+  lazy val commonsLang = "org.apache.commons" % "commons-lang3" % "3.11"
 }

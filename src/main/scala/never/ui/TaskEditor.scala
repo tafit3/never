@@ -1,28 +1,32 @@
 package never.ui
 
-import java.awt.{Toolkit, _}
 import java.awt.event.{ActionEvent, InputEvent, KeyAdapter, KeyEvent}
+import java.awt.{Color, Component, GridBagConstraints, GridBagLayout, Toolkit}
 import java.time.Instant
 import java.time.Instant.now
 
-import javax.swing.{AbstractAction, KeyStroke, _}
-import javax.swing.event.{UndoableEditEvent, UndoableEditListener}
+import javax.swing.event.UndoableEditEvent
+import javax.swing.text.JTextComponent
 import javax.swing.undo.{CannotRedoException, CannotUndoException, UndoManager}
+import javax.swing.{AbstractAction, KeyStroke, _}
 import never.domain.NodeView
-import never.ui.MainFrame.LabelMargin
 import never.ui.TaskEditor.EditViewData
 import never.ui.TaskEditorModel.{EditingState, Empty}
-import never.util.Constants.EMPTY_VALUE_PLACEHOLDER
+import never.util.Constants.{DefaultEmptyBorder, EmptyValuePlaceholder}
 import never.util.DateUtils
+import org.apache.commons.lang3.StringUtils
+
+import scala.collection.immutable.SortedSet
 
 object TaskEditor {
-  case class EditViewData(instant: Instant, text: String, status: String)
+  case class EditViewData(instant: Instant, text: String, status: String, tags: Set[String])
 }
 
 class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
   private val MASK = Toolkit.getDefaultToolkit.getMenuShortcutKeyMask
   private val helpButton = new JButton("?")
   private val upperLabel = new JLabel
+  private val tagsField = new JTextField()
   private val editArea = ComponentFactory.createTextArea()
 
   model.addListener(new TaskEditorListener {
@@ -33,9 +37,9 @@ class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
         case Empty => None
         case _ => Some(editingNode match {
           case Some(node) =>
-            EditViewData(node.created, node.content, node.status)
+            EditViewData(node.created, node.content, node.status, node.tags)
           case None =>
-            EditViewData(now(), "", "")
+            EditViewData(now(), "", "", Set.empty)
         })
       })
     }
@@ -43,7 +47,7 @@ class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
     override def loseFocus(): Unit = ()
   })
 
-  editArea.addKeyListener(new KeyAdapter {
+  val defaultKeyAdapter = new KeyAdapter {
     override def keyReleased(e: KeyEvent): Unit = {
       if(e.getKeyCode == KeyEvent.VK_ENTER && ((e.getModifiersEx & InputEvent.CTRL_DOWN_MASK) > 0)) {
         model.save()
@@ -52,17 +56,18 @@ class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
         model.loseFocus()
       }
     }
-  })
+  }
+
+  tagsField.addKeyListener(defaultKeyAdapter)
+  editArea.addKeyListener(defaultKeyAdapter)
 
   editArea.setLineWrap(true)
   editArea.setWrapStyleWord(true)
 
   val undoManager = new UndoManager
 
-  editArea.getDocument.addUndoableEditListener(new UndoableEditListener {
-    override def undoableEditHappened(e: UndoableEditEvent): Unit = {
-      undoManager.addEdit(e.getEdit)
-    }
+  editArea.getDocument.addUndoableEditListener((e: UndoableEditEvent) => {
+    undoManager.addEdit(e.getEdit)
   })
 
   editArea.getActionMap.put("Undo", new AbstractAction("Undo") {
@@ -89,8 +94,35 @@ class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
   model.setStateAccessor(new TaskEditorAreaAccessor {
     def requestFocus(): Unit = editArea.requestFocus()
 
-    def getText: String = editArea.getText
+    def content: String = editArea.getText
+
+    def tags: Set[String] = deserializeTags(tagsField.getText)
   })
+
+  def createTagsPanel(): JPanel = {
+    val panel = new JPanel(new GridBagLayout)
+    panel.setBorder(DefaultEmptyBorder)
+    val c = new GridBagConstraints
+
+    c.gridx = 0
+    c.gridy = 0
+    c.gridwidth = 1
+    c.gridheight = 1
+    c.weightx = 0
+    c.weighty = 0
+    panel.add(new JLabel("Tags: "), c)
+
+    c.gridx = 1
+    c.gridy = 0
+    c.gridwidth = 1
+    c.gridheight = 1
+    c.weightx = 1
+    c.weighty = 0
+    c.fill = GridBagConstraints.BOTH
+    panel.add(tagsField, c)
+
+    panel
+  }
 
   def initializePanel(): JPanel = {
     val panel = new JPanel(new GridBagLayout)
@@ -102,7 +134,6 @@ class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
     c.weightx = 1
     c.weighty = 0
     c.fill = GridBagConstraints.BOTH
-    c.insets = new Insets(LabelMargin,LabelMargin,LabelMargin,LabelMargin)
     panel.add(upperLabel, c)
 
     c.gridx = 1
@@ -112,7 +143,7 @@ class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
     c.weightx = 0
     c.weighty = 0
     panel.add(helpButton, c)
-    helpButton.addActionListener((actionEvent: ActionEvent) => {
+    helpButton.addActionListener((_: ActionEvent) => {
       JOptionPane.showMessageDialog(parentComponent,
         "F2 - new node\nTab - edit node, Ctrl+Enter - confirm, Esc - cancel, F3 - flip timestamp visibility\n" +
           "F4 - cycle views, F5 - select for move, F6 - insert below, F7 - insert root, F8 - flip TODO/DONE\n" +
@@ -121,6 +152,15 @@ class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
 
     c.gridx = 0
     c.gridy = 1
+    c.gridwidth = 2
+    c.gridheight = 1
+    c.weightx = 1
+    c.weighty = 0
+    panel.add(createTagsPanel(), c)
+
+
+    c.gridx = 0
+    c.gridy = 2
     c.gridwidth = 2
     c.gridheight = 1
     c.weightx = 1
@@ -134,17 +174,31 @@ class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
 
   private def changeEditView(data: Option[EditViewData]): Unit = {
     data match {
-      case Some(EditViewData(instant, text, status)) =>
+      case Some(EditViewData(instant, text, status, tags)) =>
         upperLabel.setText(DateUtils.format(instant) + "  "+status)
+        tagsField.setText(serializeTags(tags))
         editArea.setText(text)
         undoManager.discardAllEdits()
-        editArea.setEnabled(true)
-        editArea.setBackground(Color.WHITE)
+        List(editArea, tagsField).foreach(setEnabled(_, true))
       case None =>
-        upperLabel.setText(EMPTY_VALUE_PLACEHOLDER)
-        editArea.setText("")
-        editArea.setEnabled(false)
-        editArea.setBackground(Color.GRAY)
+        upperLabel.setText(EmptyValuePlaceholder)
+        List(editArea, tagsField).foreach { textComponent =>
+          textComponent.setText("")
+          setEnabled(textComponent, false)
+        }
     }
+  }
+
+  private def setEnabled(textComponent: JTextComponent, enabled: Boolean): Unit = {
+    textComponent.setEnabled(enabled)
+    textComponent.setBackground(if(enabled) Color.WHITE else Color.GRAY)
+  }
+
+  private def serializeTags(tags: Set[String]): String = {
+    (SortedSet.empty[String] ++ tags).mkString(", ")
+  }
+
+  private def deserializeTags(tags: String): Set[String] = {
+    tags.split(",").toList.map(_.trim()).filter(StringUtils.isNotBlank).toSet
   }
 }

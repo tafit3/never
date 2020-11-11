@@ -9,7 +9,7 @@ import never.util.CollectionUtils._
 import scala.annotation.tailrec
 import scala.collection.mutable
 
-case class Node(id: Long, created: Instant, status: String, content: String, parent: Option[Long]) {
+case class Node(id: Long, created: Instant, status: String, content: String, tags: Set[String], parent: Option[Long]) {
   require(id > 0, "id must be greater than 0")
 }
 
@@ -30,7 +30,7 @@ class MemoryRepositoryModel extends RepositoryModel {
     (filter match {
       case None => nodes.values
       case Some(f) => withFilter(f) { matcher =>
-        nodes.values.filter(node => matcher(node.content))
+        nodes.values.filter(node => matcher(node.content, node.tags))
       }
     }).toList.sortBy(_.created).reverse.map(toNodeView(_))
   }
@@ -60,7 +60,7 @@ class MemoryRepositoryModel extends RepositoryModel {
   private def toFilteredNodeViewWithChildren(filter: String, node: Node): List[NodeView] = {
     withFilter(filter) { matcher =>
       def visitDescendants(cur: Node, depth: Int, parentId: Option[Long]): List[NodeView] = {
-        val thisNode = toNodeView(cur, depth, parentId, matching = matcher(cur.content))
+        val thisNode = toNodeView(cur, depth, parentId, matching = matcher(cur.content, cur.tags))
         val childrenNodes = children.get(cur.id).map(_.ids.flatMap { childId =>
           visitDescendants(nodes(childId), depth + 1, Some(cur.id))
         }).toList.flatten
@@ -75,13 +75,15 @@ class MemoryRepositoryModel extends RepositoryModel {
     }
   }
 
-  private def withFilter[T](filter: String)(f: (String => Boolean) => T): T = {
+  private def withFilter[T](filter: String)(f: ((String, Set[String]) => Boolean) => T): T = {
     val pattern = Pattern.compile(filter, Pattern.CASE_INSENSITIVE)
-    f(s => pattern.matcher(s).find())
+    f { (s, tags) =>
+      pattern.matcher(s).find() || tags.exists(pattern.matcher(_).find())
+    }
   }
 
   private def toNodeView(node: Node, depth: Int = 0, parentId: Option[Long] = None, expandable: Boolean = false, matching: Boolean = false): NodeView = {
-    NodeView(node.id, node.created, node.status, node.content, depth, parentId, expandable, matching)
+    NodeView(node.id, node.created, node.status, node.content, node.tags, depth, parentId, expandable, matching)
   }
 
   override def processEvents(events: List[NodeEvent]): Unit = {
@@ -91,7 +93,7 @@ class MemoryRepositoryModel extends RepositoryModel {
   private def saveEvent(event: NodeEvent): Unit = {
     event.details match {
       case AddNode(id, status, content) =>
-        nodes += id -> Node(id, event.created, status, content, None)
+        nodes += id -> Node(id, event.created, status, content, Set.empty, None)
       case ChangeNodeStatus(id, status) =>
         require(nodes.contains(id))
         nodes += id -> nodes(id).copy(status = status)
@@ -103,7 +105,14 @@ class MemoryRepositoryModel extends RepositoryModel {
         nodes.remove(id)
       case MoveNode(id, parentInfo) =>
         moveNode(id, parentInfo)
+      case SetTags(id, tags) =>
+        setTags(id, tags)
     }
+  }
+
+  private def setTags(id: Long, tags: Set[String]): Unit = {
+    require(nodes.contains(id), s"Node not found. id='$id'")
+    nodes += id -> nodes(id).copy(tags = tags)
   }
 
   private def moveNode(id: Long, parentInfo: Option[ParentInfo]): Unit = {

@@ -1,7 +1,7 @@
 package never.ui
 
 import never.domain.NodeView
-import never.util.Constants.EMPTY_VALUE_PLACEHOLDER
+import never.util.Constants.EmptyValuePlaceholder
 import never.util.DateUtils
 
 trait TaskListModel {
@@ -44,7 +44,7 @@ class TaskListModelImpl extends TaskListModel with StateAccessorSupport[TaskList
   private def viewThem(selectedIndex: Int): Unit = {
     require(selectedIndex >= 0 && selectedIndex <= nodes.length, s"selectedIndex='$selectedIndex' out of bound. nodes.length='${nodes.length}'")
     val nodesSerialized = nodes.map(nodeToLine).mkString("\n")
-    stateAccessor.setText(EMPTY_VALUE_PLACEHOLDER+(if(nodes.nonEmpty) "\n"+nodesSerialized else ""), selectedIndex)
+    stateAccessor.setText(EmptyValuePlaceholder+(if(nodes.nonEmpty) "\n"+nodesSerialized else ""), selectedIndex)
   }
 
   private def nodeToLine(node: NodeView): String = {

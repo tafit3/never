@@ -5,14 +5,9 @@ import java.awt.{BorderLayout, GridLayout}
 
 import javax.swing._
 import never.repository.{RepositoryReadApi, RepositoryWriteApi}
-
-object MainFrame {
-  val MarginSize = 3
-  val LabelMargin = 5
-}
+import never.util.Constants.DefaultEmptyBorder
 
 class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi) extends JFrame("never") {
-  import MainFrame._
   setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
 
   private var actionId = 1
@@ -42,7 +37,7 @@ class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi) extend
     })
     val panel = new JPanel
     panel.setLayout(new BorderLayout)
-    panel.setBorder(BorderFactory.createEmptyBorder(MarginSize, MarginSize, MarginSize, MarginSize))
+    panel.setBorder(DefaultEmptyBorder)
     panel.add(mainPanel())
     add(panel)
 
