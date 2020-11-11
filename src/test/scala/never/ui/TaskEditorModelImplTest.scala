@@ -34,7 +34,7 @@ class TaskEditorModelImplTest extends BaseTest {
 
     "do nothing if the new node is empty or blank" in Inspectors.forAll(Seq("", "  ")) { text =>
       // given
-      impl.editNewNode()
+      impl.editNewNode(None)
       when(accessor.content).thenReturn(text)
       reset(listener)
 
@@ -47,7 +47,7 @@ class TaskEditorModelImplTest extends BaseTest {
 
     "add node if the new node is not empty" in {
       // given
-      impl.editNewNode()
+      impl.editNewNode(None)
       when(accessor.content).thenReturn("abc")
       val node = someNodeView()
       val updatedNode = node.copy(content = "abc")
@@ -64,9 +64,28 @@ class TaskEditorModelImplTest extends BaseTest {
       verifyNoMoreInteractions(writeApi, listener)
     }
 
+    "add data node if the new node is not empty" in {
+      // given
+      impl.editNewNode(Some("DATA"))
+      when(accessor.content).thenReturn("abc")
+      val node = someNodeView()
+      val updatedNode = node.copy(content = "abc")
+      when(readApi.nodeById(*)).thenReturn(Some(updatedNode))
+      reset(listener)
+
+      // when
+      impl.save()
+
+      // then
+      verify(writeApi).addNode("DATA", "abc")
+      verify(listener).nodeSaved(*)
+      verify(listener).editingNodeChanged(EditingExistingNode, Some(updatedNode))
+      verifyNoMoreInteractions(writeApi, listener)
+    }
+
     "add node if the new node is not empty and set tags" in {
       // given
-      impl.editNewNode()
+      impl.editNewNode(None)
       when(accessor.content).thenReturn("abc")
       when(accessor.tags).thenReturn(SomeTags)
       val node = someNodeView()
@@ -225,7 +244,7 @@ class TaskEditorModelImplTest extends BaseTest {
 
     "request focus when creating new node" in {
       // when
-      impl.editNewNode()
+      impl.editNewNode(None)
 
       // then
       verify(accessor).requestFocus()

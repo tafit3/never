@@ -5,6 +5,7 @@ import java.awt.{BorderLayout, GridLayout}
 
 import javax.swing._
 import never.repository.{RepositoryReadApi, RepositoryWriteApi}
+import never.ui.MainFrameModel.NodeNotSelected
 import never.util.Constants.DefaultEmptyBorder
 
 class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi) extends JFrame("never") {
@@ -41,7 +42,19 @@ class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi) extend
     panel.add(mainPanel())
     add(panel)
 
-    bind(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0), () => model.editNewNode())
+    def createMenuBar(): JMenuBar = {
+      val menuBar = new JMenuBar
+      val menu = new JMenu("Edit")
+      val menuItem = new JMenuItem("Change status")
+      menuItem.addActionListener((_: ActionEvent) => changeStatus())
+      menu.add(menuItem)
+      menuBar.add(menu)
+      menuBar
+    }
+    setJMenuBar(createMenuBar())
+
+    bind(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0), () => model.editNewDataNode())
+    bind(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0), () => model.editNewTaskNode())
     bind(KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0), () => model.flipTimestampVisibility())
     bind(KeyStroke.getKeyStroke(KeyEvent.VK_F4, 0), () => model.cycleViewType())
     bind(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0), () => model.selectForMove())
@@ -73,4 +86,16 @@ class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi) extend
     })
   }
 
+  private def changeStatus(): Unit = {
+    if(taskListModel.selectedNode.isDefined) {
+      new ChangeStatusFrame(this, (status: String) => {
+        model.setStatusOfSelectedNode(status) match {
+          case NodeNotSelected => JOptionPane.showMessageDialog(this, "ERROR: No node selected.")
+          case _ =>
+        }
+      })
+    } else {
+      JOptionPane.showMessageDialog(this, "No node selected.")
+    }
+  }
 }

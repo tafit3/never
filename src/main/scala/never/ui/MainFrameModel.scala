@@ -17,6 +17,11 @@ object MainFrameModel {
     val name = "all tasks in tree sorted by time descending"
   }
   val AllViewTypes = List(AllFlatByTimeDesc, AllTreeByTimeDesc)
+
+  sealed trait SetStatusResult
+  case object StatusChangedSuccessfully extends SetStatusResult
+  case object NodeNotSelected extends SetStatusResult
+  case object StatusWasTheSame extends SetStatusResult
 }
 
 class MainFrameModel(taskListModel: TaskListModel,
@@ -99,18 +104,39 @@ class MainFrameModel(taskListModel: TaskListModel,
 
   def flipTodoDone(): Unit = {
     taskListModel.selectedNode.foreach { node =>
-      val newStatus = if(node.status == "TODO") {
-        "DONE"
-      } else {
-        "TODO"
+      val newStatus = node.status match {
+        case "TODO" => "DONE"
+        case "DONE" => "TODO"
+        case other => other
       }
-      writeApi.changeNodeStatus(node.id, newStatus)
-      refreshTaskList()
+      if(newStatus != node.status) {
+        writeApi.changeNodeStatus(node.id, newStatus)
+        refreshTaskList()
+      }
     }
   }
 
-  def editNewNode(): Unit = {
-    taskEditorModel.editNewNode()
+  def setStatusOfSelectedNode(status: String): SetStatusResult = {
+    taskListModel.selectedNode match {
+      case None =>
+        NodeNotSelected
+      case Some(node) =>
+        if(node.status != status) {
+          writeApi.changeNodeStatus(node.id, status)
+          refreshTaskList()
+          StatusChangedSuccessfully
+        } else {
+          StatusWasTheSame
+        }
+    }
+  }
+
+  def editNewTaskNode(): Unit = {
+    taskEditorModel.editNewNode(None)
+  }
+
+  def editNewDataNode(): Unit = {
+    taskEditorModel.editNewNode(Some("DATA"))
   }
 
   def flipTimestampVisibility(): Unit = {

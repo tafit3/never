@@ -7,12 +7,12 @@ import never.ui.TaskEditorModel.{AddingNewNode, EditingExistingNode, EditingStat
 object TaskEditorModel {
   sealed trait EditingState
   case object Empty extends EditingState
-  case object AddingNewNode extends EditingState
+  case class AddingNewNode(newNodeStatus: String) extends EditingState
   case object EditingExistingNode extends EditingState
 }
 
 trait TaskEditorModel {
-  def editNewNode(): Unit
+  def editNewNode(newNodeStatus: Option[String]): Unit
   def setStateAccessor(stateAccessor: TaskEditorAreaAccessor): Unit
   def loseFocus(): Unit
   def editNode(id: Long, focusEditor: Boolean): Unit
@@ -29,35 +29,31 @@ class TaskEditorModelImpl(readApi: RepositoryReadApi, writeApi: RepositoryWriteA
   def save(): Unit = {
     editingState match {
       case Empty =>
-      case AddingNewNode =>
+      case AddingNewNode(newNodeStatus) =>
         if(!stateAccessor.content.isBlank) {
-          finishEdit()
+          val nodeId = writeApi.addNode(newNodeStatus, stateAccessor.content)
+          if(stateAccessor.tags.nonEmpty) {
+            writeApi.setTags(nodeId, stateAccessor.tags)
+          }
+          finishEdit(nodeId)
         }
       case EditingExistingNode =>
         require(editingNode.isDefined)
-        if(editingNode.exists(node => (node.content != stateAccessor.content) || (node.tags != stateAccessor.tags))) {
-          finishEdit()
+        editingNode.foreach { node =>
+          if((node.content != stateAccessor.content) || (node.tags != stateAccessor.tags)) {
+            if (node.content != stateAccessor.content) {
+              writeApi.changeNodeContent(node.id, stateAccessor.content)
+            }
+            if (node.tags != stateAccessor.tags) {
+              writeApi.setTags(node.id, stateAccessor.tags)
+            }
+            finishEdit(node.id)
+          }
         }
     }
   }
 
-  private def finishEdit(): Unit = {
-    val id = editingNode match {
-      case Some(node) =>
-        if(node.content != stateAccessor.content) {
-          writeApi.changeNodeContent(node.id, stateAccessor.content)
-        }
-        if(node.tags != stateAccessor.tags) {
-          writeApi.setTags(node.id, stateAccessor.tags)
-        }
-        node.id
-      case None =>
-        val nodeId = writeApi.addNode("TODO", stateAccessor.content)
-        if(stateAccessor.tags.nonEmpty) {
-          writeApi.setTags(nodeId, stateAccessor.tags)
-        }
-        nodeId
-    }
+  private def finishEdit(id: Long): Unit = {
     editingState = Empty
     setEditingNode(readApi.nodeById(id))
     fire(_.nodeSaved(id))
@@ -94,9 +90,9 @@ class TaskEditorModelImpl(readApi: RepositoryReadApi, writeApi: RepositoryWriteA
     fire(_.loseFocus())
   }
 
-  def editNewNode(): Unit = {
+  def editNewNode(newNodeStatus: Option[String]): Unit = {
     save()
-    editingState = AddingNewNode
+    editingState = AddingNewNode(newNodeStatus.getOrElse("TODO"))
     setEditingNode(None)
     stateAccessor.requestFocus()
   }

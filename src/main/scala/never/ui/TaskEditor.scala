@@ -11,7 +11,7 @@ import javax.swing.undo.{CannotRedoException, CannotUndoException, UndoManager}
 import javax.swing.{AbstractAction, KeyStroke, _}
 import never.domain.NodeView
 import never.ui.TaskEditor.EditViewData
-import never.ui.TaskEditorModel.{EditingState, Empty}
+import never.ui.TaskEditorModel.{AddingNewNode, EditingExistingNode, EditingState, Empty}
 import never.util.Constants.{DefaultEmptyBorder, EmptyValuePlaceholder}
 import never.util.DateUtils
 import org.apache.commons.lang3.StringUtils
@@ -35,12 +35,10 @@ class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
     override def editingNodeChanged(editingState: EditingState, editingNode: Option[NodeView]): Unit = {
       changeEditView(editingState match {
         case Empty => None
-        case _ => Some(editingNode match {
-          case Some(node) =>
-            EditViewData(node.created, node.content, node.status, node.tags)
-          case None =>
-            EditViewData(now(), "", "", Set.empty)
-        })
+        case AddingNewNode(newNodeStatus) =>
+          Some(EditViewData(now(), "", "adding " + newNodeStatus, Set.empty))
+        case EditingExistingNode =>
+          editingNode.map(node => EditViewData(node.created, node.content, node.status, node.tags))
       })
     }
 
@@ -145,7 +143,7 @@ class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
     panel.add(helpButton, c)
     helpButton.addActionListener((_: ActionEvent) => {
       JOptionPane.showMessageDialog(parentComponent,
-        "F2 - new node\nTab - edit node, Ctrl+Enter - confirm, Esc - cancel, F3 - flip timestamp visibility\n" +
+        "F1 - new data node\nF2 - new node\nTab - edit node, Ctrl+Enter - confirm, Esc - cancel, F3 - flip timestamp visibility\n" +
           "F4 - cycle views, F5 - select for move, F6 - insert below, F7 - insert root, F8 - flip TODO/DONE\n" +
           "F9 - delete")
     })
@@ -157,7 +155,6 @@ class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
     c.weightx = 1
     c.weighty = 0
     panel.add(createTagsPanel(), c)
-
 
     c.gridx = 0
     c.gridy = 2
