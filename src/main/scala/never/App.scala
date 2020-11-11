@@ -21,6 +21,6 @@ object App {
     val writeApi: RepositoryWriteApi = new SimpleRepositoryWriteApi(idGen, List(model, persistence))
     val readApi: RepositoryReadApi = model
 
-    new MainFrame(readApi, writeApi)
+    new MainFrame(readApi, writeApi, appConfig)
   }
 }

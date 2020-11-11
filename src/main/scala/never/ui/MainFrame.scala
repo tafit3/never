@@ -1,14 +1,15 @@
 package never.ui
 
 import java.awt.event.{ActionEvent, KeyEvent}
-import java.awt.{BorderLayout, GridLayout}
+import java.awt.{BorderLayout, Frame, GridLayout}
 
 import javax.swing._
+import never.AppConfig
 import never.repository.{RepositoryReadApi, RepositoryWriteApi}
 import never.ui.MainFrameModel.NodeNotSelected
 import never.util.Constants.DefaultEmptyBorder
 
-class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi) extends JFrame("never") {
+class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi, appConfig: AppConfig) extends JFrame("never") {
   setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
 
   private var actionId = 1
@@ -66,7 +67,9 @@ class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi) extend
     model.refreshTaskList()
 
     setVisible(true)
-    //setExtendedState(Frame.MAXIMIZED_BOTH)
+    if(appConfig.maximizeOnStartup) {
+      setExtendedState(Frame.MAXIMIZED_BOTH)
+    }
     setSize(800,600)
     taskListModel.requestFocus()
   }
