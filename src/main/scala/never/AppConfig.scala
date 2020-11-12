@@ -16,7 +16,9 @@ object AppConfig {
 
   private def parseFilteredViewCondition(config: Config): FilteredViewCondition = {
     val statusEq = parseConfigValue(config, "status-eq", _.getString(_))
-    FilteredViewCondition(statusEq, Set.empty, Set.empty)
+    val containsAnyOfTags = parseConfigValue(config, "contains-any-of-tags", _.getStringList(_).asScala.toSet)
+    val containsNoneOfTags = parseConfigValue(config, "contains-none-of-tags", _.getStringList(_).asScala.toSet)
+    FilteredViewCondition(statusEq, containsAnyOfTags, containsNoneOfTags)
   }
 
   private def parseFilteredView(config: Config): FilteredView = {
@@ -39,6 +41,6 @@ object AppConfig {
 
 case class AppConfig(dbFile: File, maximizeOnStartup: Boolean, filteredViews: List[FilteredView])
 
-case class FilteredViewCondition(statusEqualTo: Option[String], containsAnyOfTags: Set[String], containsNoneOfTags: Set[String])
+case class FilteredViewCondition(statusEqualTo: Option[String], containsAnyOfTags: Option[Set[String]], containsNoneOfTags: Option[Set[String]])
 
 case class FilteredView(name: String, condition: NodeMatchCondition)

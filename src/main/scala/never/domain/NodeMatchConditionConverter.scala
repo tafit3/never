@@ -13,12 +13,8 @@ object NodeMatchConditionConverter {
   private def toNodeMatchCondition(condition: FilteredViewCondition): NodeMatchCondition = {
     val components = ListBuffer.empty[NodeMatchCondition]
     condition.statusEqualTo.foreach(status => components.addOne(StatusEquals(status)))
-    if(condition.containsAnyOfTags.nonEmpty) {
-      components.addOne(TagsContainAnyOf(condition.containsAnyOfTags))
-    }
-    if(condition.containsNoneOfTags.nonEmpty) {
-      components.addOne(TagsContainNoneOf(condition.containsNoneOfTags))
-    }
+    condition.containsAnyOfTags.foreach(tags => components.addOne(TagsContainAnyOf(tags)))
+    condition.containsNoneOfTags.foreach(tags => components.addOne(TagsContainNoneOf(tags)))
     And(components.toList)
   }
 }

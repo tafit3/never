@@ -1,5 +1,7 @@
 package never
 
+import java.io.File
+
 import com.typesafe.config.ConfigFactory
 import never.repository._
 import never.ui.MainFrame
@@ -12,7 +14,13 @@ object App {
   }
 
   def main(args: Array[String]): Unit = {
-    val appConfig = AppConfig(ConfigFactory.load())
+    val cfgFile = System.getProperty("never.cfgfile")
+    val config = if(cfgFile != null) {
+      ConfigFactory.parseFile(new File(cfgFile)).withFallback(ConfigFactory.load()).resolve()
+    } else {
+      ConfigFactory.load()
+    }
+    val appConfig = AppConfig(config)
     val model = new MemoryRepositoryModel()
     val persistence = new FileBasedRepositoryPersistence(appConfig)
     val idGen = new SimpleSequenceIdGenerator()
