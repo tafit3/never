@@ -5,6 +5,7 @@ import java.awt.{BorderLayout, Frame, GridLayout}
 
 import javax.swing._
 import never.AppConfig
+import never.domain.NodeMatchCondition
 import never.repository.{RepositoryReadApi, RepositoryWriteApi}
 import never.ui.MainFrameModel.NodeNotSelected
 import never.util.Constants.DefaultEmptyBorder
@@ -34,7 +35,7 @@ class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi, appCon
       }
 
       override def applyFilter(filter: String): Unit = {
-        model.applyFilter(filter)
+        model.applyTextSearchRegex(filter)
       }
     })
     val panel = new JPanel
@@ -50,6 +51,9 @@ class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi, appCon
       menuItem.addActionListener((_: ActionEvent) => changeStatus())
       menu.add(menuItem)
       menuBar.add(menu)
+
+      menuBar.add(createFilteredViewsMenu())
+
       menuBar
     }
     setJMenuBar(createMenuBar())
@@ -87,6 +91,27 @@ class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi, appCon
         runnable.run()
       }
     })
+  }
+
+  private def createFilteredViewsMenu(): JMenu = {
+    def switchTo(menuItem: JRadioButtonMenuItem, nodeMatchCondition: NodeMatchCondition): Unit = {
+      model.switchFilteredView(nodeMatchCondition)
+      menuItem.setSelected(true)
+    }
+
+    val buttonGroup = new ButtonGroup
+    val menu = new JMenu("Filtered views")
+    val menuItem = new JRadioButtonMenuItem("all", true)
+    menuItem.addActionListener((_: ActionEvent) => switchTo(menuItem, NodeMatchCondition.Empty))
+    menu.add(menuItem)
+    buttonGroup.add(menuItem)
+    appConfig.filteredViews.foreach { filteredView =>
+      val menuItem = new JRadioButtonMenuItem(filteredView.name)
+      menuItem.addActionListener((_: ActionEvent) => switchTo(menuItem, filteredView.condition))
+      menu.add(menuItem)
+      buttonGroup.add(menuItem)
+    }
+    menu
   }
 
   private def changeStatus(): Unit = {

@@ -1,7 +1,7 @@
 package never.ui
 
-import never.domain.{NodeView, ParentInfo}
-import never.repository.{RepositoryReadApi, RepositoryWriteApi}
+import never.domain.{NodeMatchCondition, NodeView, ParentInfo}
+import never.repository.{NodesFilter, RepositoryReadApi, RepositoryWriteApi}
 
 import scala.collection.mutable
 
@@ -30,18 +30,15 @@ class MainFrameModel(taskListModel: TaskListModel,
                      writeApi: RepositoryWriteApi) {
   import MainFrameModel._
   private var viewType: ViewType = AllTreeByTimeDesc
+  private var filteredViewCondition: NodeMatchCondition = NodeMatchCondition.Empty
   private val expandedNodes = mutable.Set.empty[Long]
   private var selectedForMove: Option[Long] = None
-  private var filter: Option[String] = None
+  private var textSearchRegex: Option[String] = None
 
-  def applyFilter(filter: String): Unit = {
-    val processed = if(filter.isBlank) {
-      None
-    } else {
-      Some(filter.trim)
-    }
-    if(this.filter != processed) {
-      this.filter = processed
+  def applyTextSearchRegex(textSearchRegex: String): Unit = {
+    val processedRegex = Option.when(!textSearchRegex.isBlank)(textSearchRegex.trim)
+    if(this.textSearchRegex != processedRegex) {
+      this.textSearchRegex = processedRegex
       refreshTaskList()
     }
   }
@@ -64,11 +61,12 @@ class MainFrameModel(taskListModel: TaskListModel,
   })
 
   private def readNodes(): List[NodeView] = {
+    val nodesFilter = NodesFilter(textSearchRegex, filteredViewCondition)
     viewType match {
       case AllFlatByTimeDesc =>
-        readApi.allNodesByCreatedDesc(filter)
+        readApi.allNodesByCreatedDesc(nodesFilter)
       case AllTreeByTimeDesc =>
-        readApi.allNodesAsTreeByCreatedDesc(filter, expandedNodes.toSet)
+        readApi.allNodesAsTreeByCreatedDesc(nodesFilter, expandedNodes.toSet)
     }
   }
 
@@ -94,6 +92,11 @@ class MainFrameModel(taskListModel: TaskListModel,
 
   def cycleViewType(): Unit = {
     viewType = nextViewType(viewType)
+    refreshTaskList()
+  }
+
+  def switchFilteredView(filteredViewCondition: NodeMatchCondition): Unit = {
+    this.filteredViewCondition = filteredViewCondition
     refreshTaskList()
   }
 

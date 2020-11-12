@@ -12,7 +12,7 @@ class TaskListModelImplTest extends BaseTest {
   "model" should {
     "set text with no nodes" in {
       // when
-      impl.setNodes(List.empty)
+      impl.setNodes(Nil)
 
       // then
       verify(accessor).setText("--", 0)

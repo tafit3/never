@@ -19,6 +19,7 @@ case class ChildrenList(ids: List[Long]) {
 }
 
 class MemoryRepositoryModel extends RepositoryModel {
+  private val nodeMatcher = new NodeMatcher()
   private val nodes = mutable.Map.empty[Long, Node]
   private val children = mutable.Map.empty[Long, ChildrenList]
 
@@ -26,59 +27,51 @@ class MemoryRepositoryModel extends RepositoryModel {
     nodes.get(id).map(toNodeView(_))
   }
 
-  override def allNodesByCreatedDesc(filter: Option[String]): List[NodeView] = {
-    (filter match {
-      case None => nodes.values
-      case Some(f) => withFilter(f) { matcher =>
-        nodes.values.filter(node => matcher(node.content, node.tags))
-      }
-    }).toList.sortBy(_.created).reverse.map(toNodeView(_))
+  override def allNodesByCreatedDesc(nodesFilter: NodesFilter): List[NodeView] = {
+    withFilter(nodesFilter)(nodes.values.filter).toList.sortBy(_.created).reverse.map(toNodeView(_))
   }
 
-  override def allNodesAsTreeByCreatedDesc(filter: Option[String], expandedNodes: Set[Long]): List[NodeView] = {
+  override def allNodesAsTreeByCreatedDesc(nodesFilter: NodesFilter, expandedNodes: Set[Long]): List[NodeView] = {
     nodes.values.filter(_.parent.isEmpty).toList.sortBy(_.created).reverse.flatMap { rootNode =>
-      filter match {
-        case None => toNodeViewWithChildren(rootNode, expandedNodes)
-        case Some(f) => toFilteredNodeViewWithChildren(f, rootNode)
-      }
+      toFilteredNodeViewWithChildren(nodesFilter, rootNode, expandedNodes)
     }
   }
 
-  private def toNodeViewWithChildren(node: Node, expandedNodes: Set[Long]): List[NodeView] = {
-    def visitDescendants(cur: Node, depth: Int, parentId: Option[Long]): List[NodeView] = {
-      if(expandedNodes.contains(cur.id)) {
-        toNodeView(cur, depth, parentId) +: children.get(cur.id).map(_.ids.flatMap { childId =>
-          visitDescendants(nodes(childId), depth + 1, Some(cur.id))
-        }).toList.flatten
-      } else {
-        List(toNodeView(cur, depth, parentId, children.contains(cur.id)))
-      }
-    }
-    visitDescendants(node, 0, None)
-  }
+  private def toFilteredNodeViewWithChildren(nodesFilter: NodesFilter, node: Node, expandedNodes: Set[Long]): List[NodeView] = {
+    val expandAllNodes = nodesFilter.textSearchRegex.isDefined
+    withFilter(nodesFilter) { matcher =>
+      def nodeMatches(nodeId: Long): Boolean = if(matcher(nodes(nodeId))) true else anyOfDescentantsMatches(nodeId)
 
-  private def toFilteredNodeViewWithChildren(filter: String, node: Node): List[NodeView] = {
-    withFilter(filter) { matcher =>
-      def visitDescendants(cur: Node, depth: Int, parentId: Option[Long]): List[NodeView] = {
-        val thisNode = toNodeView(cur, depth, parentId, matching = matcher(cur.content, cur.tags))
-        val childrenNodes = children.get(cur.id).map(_.ids.flatMap { childId =>
-          visitDescendants(nodes(childId), depth + 1, Some(cur.id))
-        }).toList.flatten
+      def anyOfDescentantsMatches(nodeId: Long): Boolean = children.get(nodeId).exists(_.ids.exists(nodeMatches))
+
+      def visitDescendants(cur: Node, depth: Int = 0, parentId: Option[Long] = None): List[NodeView] = {
+        val descendantsMatches = anyOfDescentantsMatches(cur.id)
+        val expandable = !expandAllNodes && !expandedNodes(cur.id) && descendantsMatches
+        val thisNode = toNodeView(cur, depth, parentId, expandable, matching = matcher(cur))
+        val childrenNodes =
+          if(expandAllNodes || descendantsMatches) {
+            children.get(cur.id).map(_.ids.flatMap { childId =>
+              visitDescendants(nodes(childId), depth + 1, Some(cur.id))
+            }).toList.flatten
+          } else {
+            Nil
+          }
         if (thisNode.matching || childrenNodes.nonEmpty) {
-          thisNode +: childrenNodes
+          thisNode +: (if(expandAllNodes || expandedNodes(cur.id)) childrenNodes else Nil)
         } else {
-          List.empty
+          Nil
         }
       }
-
-      visitDescendants(node, 0, None)
+      visitDescendants(node)
     }
   }
 
-  private def withFilter[T](filter: String)(f: ((String, Set[String]) => Boolean) => T): T = {
-    val pattern = Pattern.compile(filter, Pattern.CASE_INSENSITIVE)
-    f { (s, tags) =>
-      pattern.matcher(s).find() || tags.exists(pattern.matcher(_).find())
+  private def withFilter[T](nodesFilter: NodesFilter)(f: (Node => Boolean) => T): T = {
+    val textSearchPattern = nodesFilter.textSearchRegex.map(Pattern.compile(_, Pattern.CASE_INSENSITIVE))
+    f { node =>
+      textSearchPattern.forall {
+        pattern => pattern.matcher(node.content).find() || node.tags.exists(pattern.matcher(_).find())
+      } && nodeMatcher.matches(node, nodesFilter.nodeMatchCondition)
     }
   }
 
