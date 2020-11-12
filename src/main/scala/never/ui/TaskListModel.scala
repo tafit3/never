@@ -49,7 +49,10 @@ class TaskListModelImpl extends TaskListModel with StateAccessorSupport[TaskList
 
   private def nodeToLine(node: NodeView): String = {
     val date = if(timestampsVisible) DateUtils.format(node.created) + " " else ""
-    ("." * node.depth) + date + node.status + " " + flatPrefix(node.content, 50) + (if(node.expandable) " ..." else "")
+    val tags = if(node.tags.nonEmpty) {
+      node.tags.mkString("[", ", ", "] ")
+    } else ""
+    ("." * (node.depth+1)) +(if(node.expandable) "*" else " ")+ " " + date + node.status + " " + tags + flatPrefix(node.content, 90)
   }
 
   private def flatPrefix(s: String, maxLen: Int): String = {
@@ -61,7 +64,8 @@ class TaskListModelImpl extends TaskListModel with StateAccessorSupport[TaskList
     }
     val flat = processed.replaceAll("\\s+", " ").trim()
     if(flat.length > maxLen) {
-      flat.substring(0, maxLen).trim()
+      val i = flat.lastIndexOf(' ', maxLen)
+      flat.substring(0, if (i >= 0) i else maxLen).trim() + "..."
     } else {
       flat
     }

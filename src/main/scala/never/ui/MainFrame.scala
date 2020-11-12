@@ -46,22 +46,18 @@ class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi, appCon
 
     def createMenuBar(): JMenuBar = {
       val menuBar = new JMenuBar
-      val menu = new JMenu("Edit")
-      val menuItem = new JMenuItem("Change status")
-      menuItem.addActionListener((_: ActionEvent) => changeStatus())
-      menu.add(menuItem)
-      menuBar.add(menu)
 
+      menuBar.add(createEditMenu())
+      menuBar.add(createViewMenu())
       menuBar.add(createFilteredViewsMenu())
-
       menuBar
     }
     setJMenuBar(createMenuBar())
 
-    bind(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0), () => model.editNewDataNode())
-    bind(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0), () => model.editNewTaskNode())
-    bind(KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0), () => model.flipTimestampVisibility())
-    bind(KeyStroke.getKeyStroke(KeyEvent.VK_F4, 0), () => model.cycleViewType())
+    bind(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0), () => model.editNewTaskNode())
+    bind(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0), () => model.editNewDataNode())
+    bind(KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0), () => model.editNewKbNode())
+    bind(KeyStroke.getKeyStroke(KeyEvent.VK_F4, 0), () => model.editNewSnippetNode())
     bind(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0), () => model.selectForMove())
     bind(KeyStroke.getKeyStroke(KeyEvent.VK_F6, 0), () => model.insertBelow())
     bind(KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0), () => model.insertRoot())
@@ -93,6 +89,30 @@ class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi, appCon
     })
   }
 
+  private def createEditMenu(): JMenu = {
+    val menu = new JMenu("Edit")
+    menu.setMnemonic('E')
+    val menuItem = new JMenuItem("Change status", 'S')
+    menuItem.addActionListener((_: ActionEvent) => changeStatus())
+    menu.add(menuItem)
+    menu
+  }
+
+  private def createViewMenu(): JMenu = {
+    val menu = new JMenu("View")
+    menu.setMnemonic('V')
+    val menuItem = new JCheckBoxMenuItem("Flip timestamp visibility")
+    menuItem.setMnemonic('T')
+    menuItem.addActionListener((_: ActionEvent) => model.flipTimestampVisibility())
+    menu.add(menuItem)
+
+    val cycleViewTypeMenuTiem = new JMenuItem("Cycle view type")
+    cycleViewTypeMenuTiem.setMnemonic('V')
+    cycleViewTypeMenuTiem.addActionListener((_: ActionEvent) => model.cycleViewType())
+    menu.add(cycleViewTypeMenuTiem)
+    menu
+  }
+
   private def createFilteredViewsMenu(): JMenu = {
     def switchTo(menuItem: JRadioButtonMenuItem, nodeMatchCondition: NodeMatchCondition): Unit = {
       model.switchFilteredView(nodeMatchCondition)
@@ -101,7 +121,9 @@ class MainFrame(readApi: RepositoryReadApi, writeApi: RepositoryWriteApi, appCon
 
     val buttonGroup = new ButtonGroup
     val menu = new JMenu("Filtered views")
-    val menuItem = new JRadioButtonMenuItem("all", true)
+    menu.setMnemonic('F')
+    val menuItem = new JRadioButtonMenuItem("All", true)
+    menuItem.setMnemonic('A')
     menuItem.addActionListener((_: ActionEvent) => switchTo(menuItem, NodeMatchCondition.Empty))
     menu.add(menuItem)
     buttonGroup.add(menuItem)

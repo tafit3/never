@@ -95,6 +95,8 @@ class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
     def content: String = editArea.getText
 
     def tags: Set[String] = deserializeTags(tagsField.getText)
+
+    def setTags(tags: Set[String]): Unit = tagsField.setText(serializeTags(tags))
   })
 
   def createTagsPanel(): JPanel = {
@@ -143,9 +145,16 @@ class TaskEditor(parentComponent: Component, model: TaskEditorModel) {
     panel.add(helpButton, c)
     helpButton.addActionListener((_: ActionEvent) => {
       JOptionPane.showMessageDialog(parentComponent,
-        "F1 - new data node\nF2 - new node\nTab - edit node, Ctrl+Enter - confirm, Esc - cancel, F3 - flip timestamp visibility\n" +
-          "F4 - cycle views, F5 - select for move, F6 - insert below, F7 - insert root, F8 - flip TODO/DONE\n" +
-          "F9 - delete")
+        "F1 - new task node\n" +
+        "F2 - new data node\n" +
+        "F3 - new KB node\n" +
+        "F4 - new snippet\n" +
+        "F5 - select for move\n" +
+        "F6 - insert below\n" +
+        "F7 - insert root\n" +
+        "F8 - flip TODO/DONE\n" +
+        "F9 - delete\n" +
+        "Tab - edit node, Ctrl+Enter - confirm, Esc - cancel")
     })
 
     c.gridx = 0

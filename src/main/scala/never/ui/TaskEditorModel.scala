@@ -12,7 +12,7 @@ object TaskEditorModel {
 }
 
 trait TaskEditorModel {
-  def editNewNode(newNodeStatus: Option[String]): Unit
+  def editNewNode(newNodeStatus: Option[String], newNodeTags: Set[String]): Unit
   def setStateAccessor(stateAccessor: TaskEditorAreaAccessor): Unit
   def loseFocus(): Unit
   def editNode(id: Long, focusEditor: Boolean): Unit
@@ -90,10 +90,11 @@ class TaskEditorModelImpl(readApi: RepositoryReadApi, writeApi: RepositoryWriteA
     fire(_.loseFocus())
   }
 
-  def editNewNode(newNodeStatus: Option[String]): Unit = {
+  def editNewNode(newNodeStatus: Option[String], newNodeTags: Set[String]): Unit = {
     save()
     editingState = AddingNewNode(newNodeStatus.getOrElse("TODO"))
     setEditingNode(None)
+    stateAccessor.setTags(newNodeTags)
     stateAccessor.requestFocus()
   }
 }

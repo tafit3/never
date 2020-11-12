@@ -28,7 +28,7 @@ class TaskListModelImplTest extends BaseTest {
       // then
       verify(accessor).setText(
         """--
-          |TODO abc
+          |.  TODO abc
         """.stripMarginTr, 0)
     }
 
@@ -46,13 +46,13 @@ class TaskListModelImplTest extends BaseTest {
       // then
       verify(accessor).setText(
         """--
-          |TODO abc
+          |.  TODO abc
         """.stripMarginTr, 1)
     }
 
     "render node description shorter than the full task content" in {
       // given
-      val nodes = List(someNodeView(content = "123456789 a123456789 b123456789 c123456789 d123456789 e123456789"))
+      val nodes = List(someNodeView(content = "123456789 a123456789 b123456789 c123456789 d123456789 e123456789 f123456789 g123456789 h123456789"))
 
       // when
       impl.setNodes(nodes)
@@ -60,7 +60,7 @@ class TaskListModelImplTest extends BaseTest {
       // then
       verify(accessor).setText(
         """--
-          |TODO 123456789 a123456789 b123456789 c123456789 d123456
+          |.  TODO 123456789 a123456789 b123456789 c123456789 d123456789 e123456789 f123456789 g123456789...
         """.stripMarginTr, 0)
     }
 
@@ -74,9 +74,9 @@ class TaskListModelImplTest extends BaseTest {
       // then
       verify(accessor).setText(
         """--
-          |TODO task1
-          |TODO task2
-          |TODO task3
+          |.  TODO task1
+          |.  TODO task2
+          |.  TODO task3
         """.stripMarginTr, 0)
     }
 
@@ -90,7 +90,7 @@ class TaskListModelImplTest extends BaseTest {
       // then
       verify(accessor).setText(
         """--
-          |DONE some-task
+          |.  DONE some-task
         """.stripMarginTr, 0)
     }
 
@@ -107,9 +107,9 @@ class TaskListModelImplTest extends BaseTest {
       // then
       verify(accessor).setText(
         """--
-          |.TODO abc
-          |...TODO def
-          |..TODO ghi
+          |..  TODO abc
+          |....  TODO def
+          |...  TODO ghi
         """.stripMarginTr, 0)
     }
 
@@ -123,7 +123,7 @@ class TaskListModelImplTest extends BaseTest {
       // then
       verify(accessor).setText(
         """--
-          |TODO some-task ...
+          |.* TODO some-task
         """.stripMarginTr, 0)
     }
 
@@ -158,7 +158,7 @@ class TaskListModelImplTest extends BaseTest {
       // then
       verify(accessor).setText(
         """--
-          |2001-09-09 TODO some-task
+          |.  2001-09-09 TODO some-task
         """.stripMarginTr, 0)
     }
 
@@ -174,7 +174,7 @@ class TaskListModelImplTest extends BaseTest {
       // then
       verify(accessor).setText(
         """--
-          |TODO some-task
+          |.  TODO some-task
         """.stripMarginTr, 0)
     }
 
@@ -196,7 +196,7 @@ class TaskListModelImplTest extends BaseTest {
       // then
       verify(accessor).setText(
         """--
-          |TODO task1
+          |.  TODO task1
         """.stripMarginTr, 0)
     }
   }

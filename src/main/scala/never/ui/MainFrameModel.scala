@@ -135,11 +135,19 @@ class MainFrameModel(taskListModel: TaskListModel,
   }
 
   def editNewTaskNode(): Unit = {
-    taskEditorModel.editNewNode(None)
+    taskEditorModel.editNewNode(None, Set.empty)
   }
 
   def editNewDataNode(): Unit = {
-    taskEditorModel.editNewNode(Some("DATA"))
+    taskEditorModel.editNewNode(Some("DATA"), Set.empty)
+  }
+
+  def editNewKbNode(): Unit = {
+    taskEditorModel.editNewNode(Some("DATA"), Set("KB"))
+  }
+
+  def editNewSnippetNode(): Unit = {
+    taskEditorModel.editNewNode(Some("DATA"), Set("snippet"))
   }
 
   def flipTimestampVisibility(): Unit = {
